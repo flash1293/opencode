@@ -1,0 +1,46 @@
+ENABLE_LINTERS:
+  - TYPESCRIPT_ES
+  - YAML_YAMLLINT
+  - ACTION_ACTIONLINT
+  - DOCKERFILE_HADOLINT
+  - BASH_SHELLCHECK
+  - COPYPASTE_JSCPD
+  - REPOSITORY_GIT_DIFF
+  - REPOSITORY_GITLEAKS
+  - REPOSITORY_SECRETLINT
+  - REPOSITORY_TRIVY
+
+SHOW_ELAPSED_TIME: true
+FILEIO_REPORTER: false
+SARIF_REPORTER: false
+FLAVOR_SUGGESTIONS: false
+REPORTERS_MARKDOWN_TYPE: simple
+
+# Install project deps (eslint, typescript-eslint) so eslint.config.js resolves.
+# NODE_ENV=production in the container skips devDependencies by default.
+PRE_COMMANDS:
+  - command: "NODE_ENV=development npm ci --ignore-scripts"
+    cwd: "workspace"
+
+# Use project's ESLint 10 (flat config, --no-eslintrc removed in v9+)
+TYPESCRIPT_ES_CLI_EXECUTABLE:
+  - "node"
+  - "node_modules/.bin/eslint"
+TYPESCRIPT_ES_CONFIG_FILE: eslint.config.js
+TYPESCRIPT_ES_COMMAND_REMOVE_ARGUMENTS:
+  - "--no-eslintrc"
+
+# Global exclusions
+FILTER_REGEX_EXCLUDE: "(node_modules/|dist/|build/|\\.git/)"
+
+# Skip generated code for ESLint (39k lines of schemas + 2k lines of cloud APIs)
+TYPESCRIPT_ES_FILTER_REGEX_EXCLUDE: "(src/es/apis/schemas/|src/cloud/apis/|packages/es-schemas/src/)"
+
+# yamllint: skip test fixtures (custom multi-doc YAML DSL)
+YAML_YAMLLINT_CONFIG_FILE: .yamllint.yml
+YAML_YAMLLINT_FILTER_REGEX_EXCLUDE: "(codegen/functional/test/fixtures/|node_modules/)"
+
+COPYPASTE_JSCPD_CONFIG_FILE: .jscpd.json
+
+# shellcheck: warn only until active script work stabilises
+BASH_SHELLCHECK_DISABLE_ERRORS: true
