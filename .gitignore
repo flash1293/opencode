@@ -1,0 +1,19 @@
+node_modules
+dist
+build
+*.tsbuildinfo
+*.log
+.env*
+.DS_Store
+.elasticrc.yml
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# MegaLinter reports
+megalinter-reports/
+
+# Generated functional test scripts
+test/functional/es/
