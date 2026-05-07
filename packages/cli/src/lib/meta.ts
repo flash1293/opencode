@@ -4,12 +4,9 @@
  */
 
 import os from 'node:os'
-import { createRequire } from 'node:module'
-
-const require = createRequire(import.meta.url)
-const cliVersion: string = (require('../../package.json') as { version: string }).version
-const transportVersion: string = (require('@elastic/transport/package.json') as { version: string }).version
-const undiciVersion: string = (require('undici/package.json') as { version: string }).version
+import { version as cliVersion } from '../../package.json'
+import { version as transportVersion } from '@elastic/transport/package.json'
+import { version as undiciVersion } from 'undici/package.json'
 
 /**
  * Converts a semver string to the format required by the x-elastic-client-meta spec.

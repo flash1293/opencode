@@ -472,8 +472,10 @@ async function editInEditor (name: string, original: RawContext): Promise<RawCon
     await writeFile(path, header + body, { encoding: 'utf-8', mode: 0o600 })
     const exitCode = await new Promise<number>((resolve, reject) => {
       const child = spawn(editor, [path], { stdio: 'inherit', shell: true })
-      child.on('exit', code => resolve(code ?? 0))
-      child.on('error', reject)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(child as any).on('exit', (code: number | null) => resolve(code ?? 0))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(child as any).on('error', reject)
     })
     if (exitCode !== 0) return null
     const content = await readFile(path, 'utf-8')

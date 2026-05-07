@@ -47,7 +47,7 @@ export function createSearchCommand (deps: SearchDeps = defaultDeps): OpaqueComm
           total: resp.totalResults,
           page: resp.pageNumber,
           pageCount: resp.pageCount,
-        }
+        } as JsonValue
       } catch (err) {
         return {
           error: {

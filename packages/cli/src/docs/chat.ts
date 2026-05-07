@@ -85,7 +85,8 @@ export function createChatCommand (deps: ChatDeps = defaultDeps): OpaqueCommandH
         await new Promise<void>((resolve) => {
           const prompt = (): void => {
             process.stderr.write('\nAsk a follow-up (or press Enter to quit): ')
-            rl.once('line', async (answer) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ;(rl as any).once('line', async (answer: string) => {
               const followUp = answer.trim()
               if (followUp === '') {
                 rl.close()
@@ -97,7 +98,8 @@ export function createChatCommand (deps: ChatDeps = defaultDeps): OpaqueCommandH
             })
           }
           prompt()
-          rl.on('close', resolve)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(rl as any).on('close', resolve)
         })
       }
 

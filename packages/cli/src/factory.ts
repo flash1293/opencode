@@ -14,6 +14,7 @@ import type { SchemaArgDefinition } from './lib/schema-args.ts'
 import { simplifyZodIssues, formatIssuesText } from './lib/zod-error.ts'
 import { renderText, formatHandlerError } from './output.ts'
 import { pickFields, parseFieldList, applyTemplate } from './lib/output-transform.ts'
+import { write, writeErr } from './io.ts'
 
 /** pre-built schema for coercing string → number, reused per option invocation */
 const numberSchema = z.coerce.number()
@@ -696,7 +697,7 @@ export function defineCommand<T extends z.ZodType> (config: CommandConfig<T>): O
       const dotPath = (parts.length > 1 ? parts.slice(1) : parts).join('.')
       if (!isCommandAllowed(dotPath, resolvedConfig.commands)) {
         if (jsonFormat === true) {
-          process.stderr.write(JSON.stringify({
+          writeErr(JSON.stringify({
             error: {
               code: 'command_blocked',
               message: `command "${dotPath}" is not allowed by the current policy`,
@@ -748,7 +749,7 @@ export function defineCommand<T extends z.ZodType> (config: CommandConfig<T>): O
       } else {
         const issues = simplifyZodIssues(result.error.issues)
         if (jsonFormat === true) {
-          process.stderr.write(JSON.stringify({
+          writeErr(JSON.stringify({
             error: {
               code: 'input_validation_failed',
               message: `Input validation failed with ${issues.length} issue(s)`,
@@ -763,9 +764,9 @@ export function defineCommand<T extends z.ZodType> (config: CommandConfig<T>): O
     }
     if (allRaw['dryRun'] === true) {
       if (jsonFormat) {
-        process.stdout.write(JSON.stringify({ success: true }) + '\n')
+        write(JSON.stringify({ success: true }) + '\n')
       } else {
-        process.stdout.write('dry run: inputs valid, no action performed\n')
+        write('dry run: inputs valid, no action performed\n')
       }
       return
     }
@@ -773,9 +774,9 @@ export function defineCommand<T extends z.ZodType> (config: CommandConfig<T>): O
     assert(handlerResult !== undefined, `command ${JSON.stringify(config.name)}: handler must return a JsonValue`)
     if (isErrorResult(handlerResult)) {
       if (jsonFormat === true) {
-        process.stderr.write(JSON.stringify(handlerResult) + '\n')
+        writeErr(JSON.stringify(handlerResult) + '\n')
       } else {
-        process.stderr.write(`Error: ${formatHandlerError(handlerResult)}\n`)
+        writeErr(`Error: ${formatHandlerError(handlerResult)}\n`)
       }
       process.exitCode = 1
     } else {
@@ -786,13 +787,13 @@ export function defineCommand<T extends z.ZodType> (config: CommandConfig<T>): O
         output = pickFields(output, parseFieldList(fieldsRaw))
       }
       if (templateRaw != null) {
-        process.stdout.write(applyTemplate(output, templateRaw))
+        write(applyTemplate(output, templateRaw))
       } else if (jsonFormat === true) {
-        process.stdout.write(JSON.stringify(output) + '\n')
+        write(JSON.stringify(output) + '\n')
       } else if (config.formatOutput !== undefined) {
-        process.stdout.write(config.formatOutput(output, parsed))
+        write(config.formatOutput(output, parsed))
       } else {
-        process.stdout.write(renderText(output))
+        write(renderText(output))
       }
     }
   })

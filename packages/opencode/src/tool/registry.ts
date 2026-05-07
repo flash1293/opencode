@@ -29,6 +29,7 @@ import { Truncate } from "./truncation"
 
 import { ChartTool } from "./chart"
 import { ApplyPatchTool } from "./apply_patch"
+import { ElasticCliTool } from "./elastic-cli"
 import {
   KibanaListWorkflows,
   KibanaGetWorkflow,
@@ -141,6 +142,7 @@ export namespace ToolRegistry {
       SkillTool,
       ChartTool,
       ApplyPatchTool,
+      ElasticCliTool,
       KibanaListWorkflows,
       KibanaGetWorkflow,
       KibanaCreateWorkflow,

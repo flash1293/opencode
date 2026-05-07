@@ -253,14 +253,23 @@ export namespace ElasticAuth {
     return undefined
   }
 
-  function ensureEab(json: Record<string, unknown>) {
-    if (!json.mcp) json.mcp = {}
-    const m = json.mcp as Record<string, unknown>
-    if (!m["eab"]) {
-      m["eab"] = {
-        type: "local",
-        command: ["elastic", "ab", "mcp", "proxy"],
-        enabled: true,
+  function ensureEabConfig(json: Record<string, unknown>, kibana?: { url: string; apiKey: string }) {
+    // Strip legacy local `elastic ab mcp proxy` entry if present from older ramen versions
+    const m = json.mcp as Record<string, unknown> | undefined
+    if (m?.["eab"] && typeof m["eab"] === "object") {
+      const eab = m["eab"] as Record<string, unknown>
+      if (eab.type === "local" && Array.isArray(eab.command) && eab.command[0] === "elastic") {
+        delete m["eab"]
+        if (Object.keys(m).length === 0) delete json.mcp
+      }
+    }
+    if (kibana) {
+      if (!json.mcp) json.mcp = {}
+      const mcp = json.mcp as Record<string, unknown>
+      mcp["eab"] = {
+        type: "remote",
+        url: kibana.url.replace(/\/+$/, "") + "/api/agent_builder/mcp",
+        headers: { Authorization: "ApiKey " + kibana.apiKey },
       }
     }
     if (!json.permission) json.permission = {}
@@ -288,7 +297,7 @@ export namespace ElasticAuth {
    * `preserveModelIfKibana` keeps an existing `kibana/<connector>` choice — but only if
    * `<connector>` exists in the new provider's models map (see {@link shouldKeepKibanaModel}).
    */
-  async function writeProjectConfig(opts: { provider: unknown; model?: string; preserveModelIfKibana?: boolean }) {
+  async function writeProjectConfig(opts: { provider: unknown; model?: string; preserveModelIfKibana?: boolean; kibana?: { url: string; apiKey: string } }) {
     let cfg = await configJsonPath()
     if (!cfg) cfg = path.join(process.cwd(), "elastic_ramen.json")
     const json = (await Filesystem.readJson(cfg).catch(() => ({ $schema: "https://elastic.co/config.json" }))) as Record<string, unknown>
@@ -297,7 +306,7 @@ export namespace ElasticAuth {
       const keep = (opts.preserveModelIfKibana ?? false) && shouldKeepKibanaModel(json.model, opts.provider)
       if (!keep) json.model = opts.model
     }
-    ensureEab(json)
+    ensureEabConfig(json, opts.kibana)
     await Filesystem.writeJson(cfg, json)
     for (const name of ["elastic_ramen.jsonc", "elastic_ramen.json"]) {
       const override = path.join(process.cwd(), ".elastic-ramen", name)
@@ -322,7 +331,8 @@ export namespace ElasticAuth {
       provider = await KibanaGateway.buildProvider(ctx.kibana_url, ctx.api_key)
     }
     await Bun.write(filepath(), toYaml({ current: currentName, contexts }), { mode: 0o600 } as any)
-    if (provider) await writeProjectConfig({ provider, model: "kibana/default", preserveModelIfKibana: true })
+    const kibana = ctx?.kibana_url && ctx.api_key ? { url: ctx.kibana_url, apiKey: ctx.api_key } : undefined
+    if (provider) await writeProjectConfig({ provider, model: "kibana/default", preserveModelIfKibana: true, kibana })
   }
 
   export async function setCurrent(name: string) {
@@ -397,6 +407,9 @@ export namespace ElasticAuth {
     const yaml = toYaml({ current, contexts: merged })
     await Bun.write(fp, yaml, { mode: 0o600 } as any)
 
-    if (input.provider) await writeProjectConfig({ provider: input.provider, model: input.model })
+    if (input.provider) {
+      const kibana = input.kibana_url && input.api_key ? { url: input.kibana_url, apiKey: input.api_key } : undefined
+      await writeProjectConfig({ provider: input.provider, model: input.model, kibana })
+    }
   }
 }

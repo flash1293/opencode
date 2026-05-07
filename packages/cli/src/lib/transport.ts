@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Transport, WeightedConnectionPool, UndiciConnection } from '@elastic/transport'
+import { Transport, WeightedConnectionPool, HttpConnection } from '@elastic/transport'
 import type { ApiKeyAuth } from '@elastic/transport'
 import { getResolvedConfig } from '../config/store.ts'
 import { clientHeaders } from './meta.ts'
@@ -58,7 +58,7 @@ export function getTransport (): Transport {
   // auth into the connection's Authorization header at instantiation time via prepareHeaders().
   // Setting pool.auth after addConnection() has no effect on the already-created connection.
   const pool = new WeightedConnectionPool({
-    Connection: UndiciConnection,
+    Connection: HttpConnection,
     ...(transportAuth != null && { auth: transportAuth })
   })
   pool.addConnection(url)
